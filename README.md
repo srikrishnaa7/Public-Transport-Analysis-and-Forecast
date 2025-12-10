@@ -1,39 +1,47 @@
-# Public Transport Passenger Forecasting
+# Public Transport Passenger Forecasting Project
 
 ## 1. Project Overview
-This project forecasts daily public transport passenger journeys for the next 365 days. It utilizes a **Random Forest Regressor** with a **Recursive Forecasting strategy** to handle time-series predictions.
+This project forecasts daily public transport passenger journeys for the next **365 days**. It uses a machine learning approach (**Random Forest Regressor**) with a **Recursive Forecasting** strategy to predict future daily traffic, and subsequently aggregates these predictions into Weekly, Monthly, and Hourly views.
 
-The project evolved from testing standard statistical models (Prophet, Holt-Winters) to a Machine Learning approach (Random Forest with Lag Features), which achieved the highest accuracy.
+The project evolved from testing standard statistical models (Prophet, Holt-Winters) to this Random Forest approach, which achieved the highest accuracy on the test data.
 
-## 2. Data Source
-* **File:** `Daily_Public_Transport_Passenger_Journeys_by_Service_Type_20250603.csv`
-* **Columns:** `Date`, `Local Route`, `Light Rail`, `Peak Service`, `Rapid Route`, `School`, `Other`.
-* **Target:** `Total` (Sum of all service types).
+## 2. Methodology
 
-## 3. Methodology & Cleaning
-
-### Data Cleaning
-* **Issue:** The raw dataset contained incomplete data entries at the end of September 2024 (e.g., extremely low passenger counts like 4 or 11, likely due to partial data upload).
-* **Solution:** All data after **September 20, 2024** was removed. This reduced the Mean Absolute Percentage Error (MAPE) from ~4000% to ~4.4%.
+### Data Preprocessing
+* **Input File:** `Daily_Public_Transport_Passenger_Journeys_by_Service_Type_20250603.csv`
+* **Target Variable:** `Total` (Sum of Local Route, Light Rail, Peak Service, Rapid Route, School, and Other).
+* **Data Cleaning:** The raw dataset contained incomplete entries at the end of September 2024 (e.g., days with only 4-11 passengers). To prevent model skew, all data after **September 20, 2024**, was removed.
+* **Imputation:** Missing dates were filled via interpolation.
 
 ### Feature Engineering
-The model uses "Lag Features" to give the Random Forest memory of past events:
-* **Lag_1:** Passenger count yesterday.
-* **Lag_7:** Passenger count on the same day last week.
-* **Lag_30:** Passenger count on the same day last month.
-* **Rolling_Mean_7:** The average trend over the last week.
-* **Time Features:** Day of week, Month, Day of Year.
+The model utilizes "Lag Features" to provide historical context (memory) to the Random Forest:
+* **Lag_1:** Passenger count from Yesterday.
+* **Lag_7:** Passenger count from Last Week (Same Day).
+* **Lag_30:** Passenger count from Last Month.
+* **Rolling_Mean_7:** The average trend over the previous 7 days.
+* **Time Features:** Day of Week, Month, Day of Year.
 
-## 4. Model Performance (Test Set: Last 60 Days)
+### Forecasting Strategy
+* **Recursive Forecasting:** Since we cannot know the "lag" values for 365 days in the future, the model predicts one day at a time. It predicts *Tomorrow*, adds that prediction to the history, and uses it to calculate the features for the *Day After*.
+
+## 3. Model Performance
+The model was evaluated on the last **60 valid days** of the dataset.
 
 | Metric | Value | Interpretation |
 | :--- | :--- | :--- |
-| **MAE** | **1,921** | On average, the prediction is off by ~1,921 passengers per day. |
-| **MAPE** | **4.39%** | The forecast is ~95.6% accurate on tested data. |
+| **MAPE** | **4.39%** | **Mean Absolute Percentage Error.** The forecast is ~95.6% accurate on average. |
+| **MAE** | **1,921** | **Mean Absolute Error.** On a typical day, the prediction is off by ~1,921 passengers. |
+| **RMSE** | **3,547** | **Root Mean Squared Error.** Slightly higher than MAE, indicating occasional larger errors (likely on holidays/events). |
+
+## 4. Output Files
+The script generates the following CSV files:
+1.  `Forecast_Daily.csv`: Day-by-day predictions for the next year.
+2.  `Forecast_Weekly.csv`: Aggregated total passengers per week.
+3.  `Forecast_Monthly.csv`: Aggregated total passengers per month.
+4.  `Forecast_Hourly.csv`: Simulated hourly breakdown based on standard commuter profiles (peaks at 8 AM & 5 PM).
 
 ## 5. Installation Requirements
-
-Requires Python 3.x and the following libraries:
+Ensure you have Python installed with the following libraries:
 
 ```bash
 pip install pandas numpy scikit-learn matplotlib
